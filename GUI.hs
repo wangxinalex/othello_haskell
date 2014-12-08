@@ -26,6 +26,7 @@ gui = do
 		menuLine gameMenu
 		menuQuit gameMenu [help := "Quit the game",
 						   on command := close f]
+
 		optMenu <- menuPane [text := "Options"]
 		r0 <- menuItem optMenu [text := "Human first",
 								help := "Choose starting player",
@@ -38,6 +39,7 @@ gui = do
 		sequence_ [set r [checked := True]
 					| (r,l) <- zip rs (map snd levels), 
 						l == defaultLevel]
+
 		hlpMenu <- menuHelp []
 		rules <- menuItem hlpMenu [text := "Rules",
 								   help := "About the game rules"]
