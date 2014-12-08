@@ -47,16 +47,13 @@ gui = do
 						on paint  := drawBackground boardBmp]
 
 		set f [statusBar := [status],
-			   menuBar := [gameMenu, optMenu, hlpMenu],
-			   layout := fill $ widget boardPanel,
-			   clientSize := sz 500 500
-				]
+			   menuBar   := [gameMenu, optMenu, hlpMenu],
+			   layout    :=   minsize (sz 500 500) $ widget boardPanel]
 
 drawBackground :: Bitmap() -> DC() -> Rect -> IO()
 drawBackground bmp dc (Rect x y w h) = 
 		do 
 			drawBitmap dc bmp pointZero False []
-			putStr "Nano"
 			return ()
 
 
