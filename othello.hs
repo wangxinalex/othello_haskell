@@ -20,13 +20,10 @@ opponentColor White = Black
 opponentColor Black = White
 opponentColor _ = Empty
 
-
 directions = [(0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1)]
-
 
 addPosition :: Position -> Position -> Position
 addPosition (x1, y1) (x2, y2) = (x1 + x2, y1 + y2)
-
 
 isRow :: Piece -> Board -> Position -> Position -> Bool
 isRow color board position direction = isRow' True color board position direction
@@ -111,8 +108,6 @@ bestMove advantageFunction color board =
 				(\position -> (position, advantageFunction color (makeMove color board position)))
 				allPositions))
 
-				
-				
 minMaxAdvantage :: Int -> Piece -> Board -> Int
 minMaxAdvantage depth color board =
 	let
@@ -142,10 +137,6 @@ minMaxAdvantage depth color board =
 					in if nextColor /= color
 						then - maxAdvantageForNextColor
 						else   maxAdvantageForNextColor
-
-
-
-
 
 boardToAscii :: Board -> String
 boardToAscii board =
@@ -226,18 +217,4 @@ userMove color board = do
 										nextColor = if allLegalMoves (opponentColor color) resultingBoard /= [] then opponentColor color else color
 									userMove nextColor resultingBoard
 
-					
-		
-				
 main = do userMove White initialBoard
-
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	

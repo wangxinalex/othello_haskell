@@ -1,3 +1,6 @@
 *.hi
 *.o
 *othello
+GUI
+*.swp
+*.swo
