@@ -16,6 +16,14 @@ convertToPiece "White" = White
 convertToPiece "Black" = Black
 convertToPiece "Empty" = Empty
 
+-- find a piece at a certain position
+findPieceWithPos:: Position -> Board -> (Position, Piece)
+findPieceWithPos (x, y) board = head [((x2, y2), p) | ((x2, y2), p) <- board, x == x2, y == y2]
+
+-- sort the board
+sortBoard:: Board -> Board
+sortBoard board = [findPieceWithPos (x, y) board| x <- [1..borderSize board], y <- [1..borderSize board]]
+
 -- return the size of the border
 borderSize:: Board -> Int
 borderSize board = 4 -- (sqrt (length board))
