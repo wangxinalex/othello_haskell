@@ -11,9 +11,14 @@ initialBoard size = [((x, y), Empty) | x <- [1..size `div` 2-1], y <- [1..size]]
 					++ [((size `div` 2, size `div` 2), Black), ((size `div` 2+1, size `div` 2+1), Black)]
 					++ [((size `div` 2, size `div` 2+1), White), ((size `div` 2+1, size `div` 2), White)]
 
+convertToPiece:: String -> Piece
+convertToPiece "White" = White
+convertToPiece "Black" = Black
+convertToPiece "Empty" = Empty
+
 -- return the size of the border
 borderSize:: Board -> Int
-borderSize board = 4 --round (sqrt (length board))
+borderSize board = 4 -- (sqrt (length board))
 					
 -- check whether a move of a certain color is available					
 checkAvailable:: Piece -> Position -> Board -> Bool
