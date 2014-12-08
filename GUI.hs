@@ -13,7 +13,12 @@ main = start gui
 
 gui :: IO ()
 gui = do
-		f <- frame [text := "Othello"]
+		f <- frame [text := "Othello" , picture := "./img/icon.png"]
+		
+		boardBmp <- bitmapCreateLoad "./img/board.png" wxBITMAP_TYPE_PNG
+
+		boardPanel <- panel f [clientSize := sz 500 500 ] 
+		
 		status <- statusField [text := "Welcome to Othello"]
 		gameMenu <- menuPane [text := "&Game"]
 		new <- menuItem gameMenu [text := "New",
@@ -37,7 +42,22 @@ gui = do
 		rules <- menuItem hlpMenu [text := "Rules",
 								   help := "About the game rules"]
 		about <- menuAbout hlpMenu [help := "About the program"]
+
+		set boardPanel [on resize := repaint boardPanel,
+						on paint  := drawBackground boardBmp]
+
 		set f [statusBar := [status],
-			   menuBar := [gameMenu, optMenu, hlpMenu]
-			   {-layout := alignCenter (widget game)-}
+			   menuBar := [gameMenu, optMenu, hlpMenu],
+			   layout := fill $ widget boardPanel,
+			   clientSize := sz 500 500
 				]
+
+drawBackground :: Bitmap() -> DC() -> Rect -> IO()
+drawBackground bmp dc (Rect x y w h) = 
+		do 
+			drawBitmap dc bmp pointZero False []
+			putStr "Nano"
+			return ()
+
+
+
