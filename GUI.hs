@@ -96,7 +96,7 @@ drawPieces dc gameBoard bmps =
                case gameBoard !! i of
                     Black -> drawBitmap dc (bmps !! blackIndex) (generatePosition i) False []
                     White -> drawBitmap dc (bmps !! whiteIndex) (generatePosition i) False []
-                    _     -> putStrLn "Empty" )
+                    _     -> return () )
         return ()
 
 for :: Int -> Int -> (Int -> IO ()) -> IO ()
