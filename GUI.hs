@@ -81,7 +81,7 @@ gui = do
 
         set f [statusBar := [status],
                menuBar   := [gameMenu, optMenu, hlpMenu],
-               layout    :=   minsize (sz 500 500) $ widget boardPanel]
+               layout    :=  minsize (sz 500 500) $ widget boardPanel]
 
 putPieces :: Panel() -> Var Board -> Var Position -> Point -> IO ()
 putPieces pan varBoard varColor (Point x y) 
@@ -92,21 +92,28 @@ putPieces pan varBoard varColor (Point x y)
          board <- varGet varBoard
          putStrLn $ "x = " ++ show x_pos ++ ", y = "++ show y_pos
          varUpdate varBoard (changeBoard step)
-         if x_pos == 0
-         then putStrLn "0"
-         varUpdate varColor (changeColor)
+         varUpdate varColor (changeColor board step)
          repaint pan
          return ()
         
-changeColor :: Position -> Position
-changeColor color
+{-check whether the step is valid.
+ 1. within the range of board
+ 2. no picec in the current position-}
+validStep :: Board -> Step -> Bool
+validStep board (x,y,position) = x >= 0 && x < boardWidth && y >= 0 && y < boardWidth && (board !! (positionToIndex x y) == Empty)
+
+{-change the piece color for a valid step-}
+changeColor :: Board -> Step -> Position -> Position
+changeColor board step color
+         | not (validStep board step) = color       
          | color == Black  = White
          | color == White  = Black
 
+{-change the board status for a valid step-}
 changeBoard :: Step -> Board -> Board
 changeBoard (x,y,position) board 
-         | x < 0 || y < 0 || x >= boardWidth || y >= boardWidth = board          
-         | otherwise = (take index board) ++ position : (drop (index + 1) board) where index = positionToIndex x y  
+         | not (validStep board (x,y,position)) = board
+         | otherwise = (take index board) ++ position : (drop (index + 1) board) where index = positionToIndex x y
 
 positionToIndex:: Int -> Int -> Int
 positionToIndex x y = (y * boardWidth + x)
