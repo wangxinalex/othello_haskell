@@ -29,12 +29,6 @@ type Step = (Int, Int, Position)
 newBoard :: Int -> Board
 newBoard width = replicate (width*width) Empty
 
-getPosition::(Int, Int)->(Int,Int)
-getPosition (x,y) = 
-          let x_pos = ((x - padding) `div` width) 
-              y_pos = ((y - padding) `div` width)
-          in (x_pos, y_pos) 
-
 main = start gui
 
 gui :: IO ()
@@ -84,17 +78,16 @@ gui = do
                layout    :=  minsize (sz 500 500) $ widget boardPanel]
 
 putPieces :: Panel() -> Var Board -> Var Position -> Point -> IO ()
-putPieces pan varBoard varColor (Point x y) 
-    = do 
-         color <- varGet varColor
-         let (x_pos, y_pos) = getPosition (x,y)
-             step = (x_pos, y_pos, color)
-         board <- varGet varBoard
-         putStrLn $ "x = " ++ show x_pos ++ ", y = "++ show y_pos
-         varUpdate varBoard (changeBoard step)
-         varUpdate varColor (changeColor board step)
-         repaint pan
-         return ()
+putPieces pan varBoard varColor (Point x y) = 
+    do color <- varGet varColor
+       let (x_pos, y_pos) = getPosition (x,y)
+           step = (x_pos, y_pos, color)
+       board <- varGet varBoard
+       putStrLn $ "x = " ++ show x_pos ++ ", y = "++ show y_pos
+       varUpdate varBoard (changeBoard step)
+       varUpdate varColor (changeColor board step)
+       repaint pan
+       return ()
         
 {-check whether the step is valid.
  1. within the range of board
@@ -105,30 +98,29 @@ validStep board (x,y,position) = x >= 0 && x < boardWidth && y >= 0 && y < board
 {-change the piece color for a valid step-}
 changeColor :: Board -> Step -> Position -> Position
 changeColor board step color
-         | not (validStep board step) = color       
-         | color == Black  = White
-         | color == White  = Black
+    | not (validStep board step) = color       
+    | color == Black  = White
+    | color == White  = Black
 
 {-change the board status for a valid step-}
 changeBoard :: Step -> Board -> Board
 changeBoard (x,y,position) board 
-         | not (validStep board (x,y,position)) = board
-         | otherwise = (take index board) ++ position : (drop (index + 1) board) where index = positionToIndex x y
+    | not (validStep board (x,y,position)) = board
+    | otherwise = (take index board) ++ position : (drop (index + 1) board) where index = positionToIndex x y
 
 positionToIndex:: Int -> Int -> Int
 positionToIndex x y = (y * boardWidth + x)
 
 drawBackground :: [Bitmap()] -> Var Board -> DC() -> Rect -> IO()
 drawBackground bmps varPieces dc (Rect x y w h) = 
-        do pieces <- varGet varPieces
-           drawBitmap dc (bmps !! boardIndex) pointZero False []
-           drawPieces dc pieces bmps
-           return ()
+    do pieces <- varGet varPieces
+       drawBitmap dc (bmps !! boardIndex) pointZero False []
+       drawPieces dc pieces bmps
+       return ()
 
 drawPieces :: DC() -> Board ->[Bitmap()] -> IO ()
 drawPieces dc gameBoard bmps = 
-    do 
-        for 0 ((length gameBoard) - 1) (\i ->
+    do  for 0 ((length gameBoard) - 1) (\i ->
                case gameBoard !! i of
                     Black -> drawBitmap dc (bmps !! blackIndex) (generatePosition i) False []
                     White -> drawBitmap dc (bmps !! whiteIndex) (generatePosition i) False []
@@ -138,9 +130,15 @@ drawPieces dc gameBoard bmps =
 for :: Int -> Int -> (Int -> IO ()) -> IO ()
 for x y f = sequence_ $ map f [x..y]
 
+getPosition::(Int, Int)->(Int,Int)
+getPosition (x,y) = 
+    let x_pos = ((x - padding) `div` width) 
+        y_pos = ((y - padding) `div` width)
+    in (x_pos, y_pos) 
+
 generatePosition :: Int -> Point
 generatePosition index  
-            | index < 0 || index >= boardWidth*boardWidth = error "Invalid position"
-            | otherwise = pt x y 
-                            where x = (index `mod` boardWidth)*width+padding
-                                  y = (index `div` boardWidth)*width+padding
+    | index < 0 || index >= boardWidth*boardWidth = error "Invalid position"
+    | otherwise = pt x y 
+                  where x = (index `mod` boardWidth)*width+padding
+                        y = (index `div` boardWidth)*width+padding
