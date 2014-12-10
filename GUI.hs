@@ -24,16 +24,22 @@ width = 56
 
 type Board = [Position]
 data Position = Black | White | Empty deriving Eq
+type Step = (Int, Int, Position)
+
+newBoard :: Int -> Board
+newBoard width = replicate (width*width) Empty
 
 getPosition::(Int, Int)->(Int,Int)
-getPosition (x,y) = (x_pos, y_pos) 
-    where x_pos = ((x - padding) `div` width) 
-          y_pos = ((y - padding) `div` width)
+getPosition (x,y) = 
+          let x_pos = ((x - padding) `div` width) 
+              y_pos = ((y - padding) `div` width)
+          in (x_pos, y_pos) 
 
 main = start gui
 
 gui :: IO ()
 gui = do
+        gameBoard <- varCreate (newBoard boardWidth)
         f <- frame [text := "Othello" , picture := "./img/icon.png"]
         
         boardBmp <- bitmapCreateLoad "./img/board.png" wxBITMAP_TYPE_PNG
@@ -69,23 +75,35 @@ gui = do
         about <- menuAbout hlpMenu [help := "About the program"]
 
         set boardPanel [on resize := repaint boardPanel,
-                        on paint  := drawBackground [boardBmp, blackPieceBmp, whitePieceBmp] [White, Empty, Black,Black,Black,Black,White,Empty,White,Black,Empty,Empty, Black, White, Black, White, Black, Empty, White],
-                        on click  := putPieces boardPanel]
+                        on paint  := drawBackground [boardBmp, blackPieceBmp, whitePieceBmp] gameBoard,
+                        on click  := putPieces boardPanel gameBoard]
 
         set f [statusBar := [status],
                menuBar   := [gameMenu, optMenu, hlpMenu],
                layout    :=   minsize (sz 500 500) $ widget boardPanel]
 
-putPieces :: Panel() -> Point -> IO ()
-putPieces pan (Point x y)
+putPieces :: Panel() -> Var Board -> Point -> IO ()
+putPieces pan varBoard (Point x y) 
     = do let (x_pos, y_pos) = getPosition (x,y)
+             step = (x_pos, y_pos, Black)
+         board <- varGet varBoard
          putStrLn $ "x = " ++ show x_pos ++ ", y = "++ show y_pos
+         varUpdate varBoard (changeBoard step)
+         repaint pan
          return ()
         
+changeBoard :: Step -> Board -> Board
+changeBoard (x,y,position) board 
+         | x < 0 || y < 0 || x >= boardWidth || y >= boardWidth = board          
+         | otherwise = (take index board) ++ position : (drop (index + 1) board) where index = positionToIndex x y  
 
-drawBackground :: [Bitmap()] -> Board -> DC() -> Rect -> IO()
-drawBackground bmps pieces dc (Rect x y w h) = 
-        do drawBitmap dc (bmps !! boardIndex) pointZero False []
+positionToIndex:: Int -> Int -> Int
+positionToIndex x y = (y * boardWidth + x)
+
+drawBackground :: [Bitmap()] -> Var Board -> DC() -> Rect -> IO()
+drawBackground bmps varPieces dc (Rect x y w h) = 
+        do pieces <- varGet varPieces
+           drawBitmap dc (bmps !! boardIndex) pointZero False []
            drawPieces dc pieces bmps
            return ()
 
@@ -108,5 +126,3 @@ generatePosition index
             | otherwise = pt x y 
                             where x = (index `mod` boardWidth)*width+padding
                                   y = (index `div` boardWidth)*width+padding
-       
-
