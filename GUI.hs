@@ -92,6 +92,8 @@ putPieces pan varBoard varColor (Point x y)
          board <- varGet varBoard
          putStrLn $ "x = " ++ show x_pos ++ ", y = "++ show y_pos
          varUpdate varBoard (changeBoard step)
+         if x_pos == 0
+         then putStrLn "0"
          varUpdate varColor (changeColor)
          repaint pan
          return ()
