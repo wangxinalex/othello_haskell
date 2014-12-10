@@ -40,6 +40,7 @@ main = start gui
 gui :: IO ()
 gui = do
         gameBoard <- varCreate (newBoard boardWidth)
+        currentColor <- varCreate (Black)
         f <- frame [text := "Othello" , picture := "./img/icon.png"]
         
         boardBmp <- bitmapCreateLoad "./img/board.png" wxBITMAP_TYPE_PNG
@@ -76,22 +77,30 @@ gui = do
 
         set boardPanel [on resize := repaint boardPanel,
                         on paint  := drawBackground [boardBmp, blackPieceBmp, whitePieceBmp] gameBoard,
-                        on click  := putPieces boardPanel gameBoard]
+                        on click  := putPieces boardPanel gameBoard currentColor]
 
         set f [statusBar := [status],
                menuBar   := [gameMenu, optMenu, hlpMenu],
                layout    :=   minsize (sz 500 500) $ widget boardPanel]
 
-putPieces :: Panel() -> Var Board -> Point -> IO ()
-putPieces pan varBoard (Point x y) 
-    = do let (x_pos, y_pos) = getPosition (x,y)
-             step = (x_pos, y_pos, Black)
+putPieces :: Panel() -> Var Board -> Var Position -> Point -> IO ()
+putPieces pan varBoard varColor (Point x y) 
+    = do 
+         color <- varGet varColor
+         let (x_pos, y_pos) = getPosition (x,y)
+             step = (x_pos, y_pos, color)
          board <- varGet varBoard
          putStrLn $ "x = " ++ show x_pos ++ ", y = "++ show y_pos
          varUpdate varBoard (changeBoard step)
+         varUpdate varColor (changeColor)
          repaint pan
          return ()
         
+changeColor :: Position -> Position
+changeColor color
+         | color == Black  = White
+         | color == White  = Black
+
 changeBoard :: Step -> Board -> Board
 changeBoard (x,y,position) board 
          | x < 0 || y < 0 || x >= boardWidth || y >= boardWidth = board          
