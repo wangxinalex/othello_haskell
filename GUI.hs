@@ -2,7 +2,7 @@
 import Graphics.UI.WX
 import Graphics.UI.WXCore
 import Data.Maybe
-{-import BW-}
+import BW
 
 levels :: [(String, Int)]
 levels = [("Easy", 2), ("Medium", 4), ("Hard", 8)]
@@ -23,14 +23,26 @@ width = 56
 boardWidth :: Int
 boardWidth = 8
 
-type Board = [Piece]
-data Piece = Black | White | Empty deriving Eq
-type Position = (Int, Int)
-type Step = (Position, Piece) -- ((Int, Int), Piece)
-type Simple_Board = [Step] -- [((Int, Int), Piece)]
-
 newBoard :: Int -> Board
 newBoard width = (replicate pad Empty) ++ [White, Black] ++ (replicate (width - 2) Empty) ++ [Black, White] ++ (replicate pad Empty) where pad = (width+1)*((width `div` 2) - 1)
+
+index2Position :: Int -> Position
+index2Position i = ((i `div` boardWidth) , (i `mod` boardWidth))
+
+board2ZBoard :: Board -> ZBoard
+board2ZBoard board
+    = b2Z 0 board
+
+b2Z :: Int -> Board -> ZBoard
+b2Z i [] = []
+b2Z i (b:bs) = ((index2Position i), b) : b2Z (i+1) bs
+
+zBoard2Board :: ZBoard -> Board
+zBoard2Board zb = zBoard2Board_ (sortZBoard zb)
+
+zBoard2Board_ :: ZBoard -> Board
+zBoard2Board_ [] = []
+zBoard2Board_ (((x,y),piece):zbs) = piece : zBoard2Board zbs
 
 main = start gui
 
@@ -115,6 +127,7 @@ putPieces pan varBoard varColor (Point x y) =
            step = ((x_pos, y_pos), color)
        board <- varGet varBoard
        putStrLn $ "x = " ++ show x_pos ++ ", y = "++ show y_pos
+       {-print board-}
        varUpdate varBoard (changeBoard step)
        varUpdate varColor (changeColor board step)
        repaint pan
@@ -124,7 +137,33 @@ putPieces pan varBoard varColor (Point x y) =
  1. within the range of board
  2. no picec in the current position-}
 validStep :: Board -> Step -> Bool
-validStep board ((x,y),position) = x >= 0 && x < boardWidth && y >= 0 && y < boardWidth && (board !! (positionToIndex x y) == Empty)
+validStep board step = (stepInBoard board step) && (stepInEmptyGrid board step) && (stepNext board step)
+ 
+stepInBoard :: Board -> Step -> Bool
+stepInBoard board ((x,y),position) = x >= 0 && x < boardWidth && y >= 0 && y < boardWidth 
+
+stepInEmptyGrid :: Board -> Step -> Bool
+stepInEmptyGrid board ((x,y), position) = board !! (position2Index x y) == Empty
+
+
+findallPieces :: Board -> [Position]
+findallPieces [] = []
+findallPieces board = findallPieces_ board 0
+
+findallPieces_ :: Board -> Int -> [Position]
+findallPieces_ [] i = []
+findallPieces_ (b:bs) i
+    | b == Empty  =  findallPieces_ bs (i+1)
+    | otherwise   =  (index2Position i): findallPieces_ bs (i+1)
+
+stepNext :: Board -> Step -> Bool
+stepNext board ((x,y),p)  = foldr (||) False [nextPosition (x,y) step2| step2 <- findallPieces board ]
+    
+nextPosition :: Position -> Position -> Bool
+nextPosition (x1, y1) (x2, y2)  = 
+     (((abs (x1 - x2)) == 1) && (abs (y1 - y2) <= 1)) || 
+     (((abs (y1 - y2)) == 1) && (abs (x1 - x2) <= 1)) 
+    
 
 {-change the piece color for a valid step-}
 changeColor :: Board -> Step -> Piece -> Piece
@@ -135,12 +174,15 @@ changeColor board step color
 
 {-change the board status for a valid step-}
 changeBoard :: Step -> Board -> Board
-changeBoard ((x,y),position) board 
-    | not (validStep board ((x,y),position)) = board
-    | otherwise = (take index board) ++ position : (drop (index + 1) board) where index = positionToIndex x y
+changeBoard ((x,y),piece) board 
+    | not (validStep board ((x,y),piece)) = board
+    | otherwise = (take index board) ++ piece : (drop (index + 1) board) where index = position2Index x y
 
-positionToIndex:: Int -> Int -> Int
-positionToIndex x y = (y * boardWidth + x)
+position2ZPosition :: Position -> Position
+position2ZPosition (x, y) = (x + 1, y + 1)
+
+position2Index:: Int -> Int -> Int
+position2Index x y = (y * boardWidth + x)
 
 drawBackground :: [Bitmap()] -> Var Board -> DC() -> Rect -> IO()
 drawBackground bmps varPieces dc (Rect x y w h) = 
