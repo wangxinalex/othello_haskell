@@ -27,7 +27,7 @@ newBoard :: Int -> Board
 newBoard width = (replicate pad Empty) ++ [White, Black] ++ (replicate (width - 2) Empty) ++ [Black, White] ++ (replicate pad Empty) where pad = (width+1)*((width `div` 2) - 1)
 
 index2Position :: Int -> Position
-index2Position i = ((i `div` boardWidth) , (i `mod` boardWidth))
+index2Position i = ((i `mod` boardWidth) , (i `div` boardWidth))
 
 board2ZBoard :: Board -> ZBoard
 board2ZBoard board
@@ -127,8 +127,9 @@ putPieces pan varBoard varColor (Point x y) =
            step = ((x_pos, y_pos), color)
        board <- varGet varBoard
        putStrLn $ "x = " ++ show x_pos ++ ", y = "++ show y_pos
-       {-print board-}
        varUpdate varBoard (changeBoard step)
+       newBoard <- varGet varBoard
+       print (findallPieces newBoard)
        varUpdate varColor (changeColor board step)
        repaint pan
        return ()
