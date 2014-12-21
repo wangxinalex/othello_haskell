@@ -114,29 +114,12 @@ putPieces pan varBoard varColor (Point x y) =
        varUpdate varColor (changeColor board step)
        repaint pan
        return ()
-        
-{-check whether the step is valid.
- 1. within the range of board
- 2. no picec in the current position-}
-validStep :: Board -> Step -> Bool
-validStep board step = (stepInBoard board step) && (stepInEmptyGrid board step) && (stepNext board step) && (stepCanReverse board step)
 
 {-change the board status for a valid step-}
 changeBoard :: Step -> Board -> Board
 changeBoard step board 
     | not (validStep board step) = board
     | otherwise = putThisPiece step (reversePieces step board) -- first reverse the pieces then put this new step on the board
-
-{-put a new step on the board-}
-putThisPiece :: Step -> Board -> Board
-putThisPiece step board = (take index board) ++ (getPiece step) : (drop (index + 1) board) where index = position2Index (getPosition step)
-
-{-reverse the pieces-}
-reversePieces :: Step -> Board -> Board
-reversePieces step board = foldl (reversePiece (getPiece step)) board (positionReversed board step)
-
-reversePiece :: Piece -> Board -> Position -> Board
-reversePiece piece board position = (take index board) ++ piece : (drop (index+1) board) where index = position2Index position
 
 {-generate the initial board-}
 newBoard :: Int -> Board

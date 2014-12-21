@@ -27,14 +27,31 @@ stepInBoard board ((x,y),position) = x >= 0 && x < boardWidth && y >= 0 && y < b
 
 {-check whether this step locates in am empty grid-}
 stepInEmptyGrid :: Board -> Step -> Bool
-stepInEmptyGrid board ((x,y), position) = board !! (position2Index (x, y)) == Empty
+stepInEmptyGrid board step = board !! (position2Index (getPosition step)) == Empty
 
 {-check whether this step can reverse other pieces-}
 stepCanReverse :: Board -> Step -> Bool
-stepCanReverse board ((x,y), piece) 
-    = foldr (||) False (map (besiegeOpposite board ((x,y),piece)) [p | p <- findPiecesSameColor board piece])
+stepCanReverse board step 
+    = foldr (||) False (map (besiegeOpposite board step) [p | p <- findPiecesSameColor board (getPiece step)])
 
-{-all pieces in the opposite color that can be reversed by this step-}
+{-check whether the step is valid.
+ 1. within the range of board
+ 2. no picec in the current position-}
+validStep :: Board -> Step -> Bool
+validStep board step = (stepInBoard board step) && (stepInEmptyGrid board step) && (stepNext board step) && (stepCanReverse board step)
+
+{-put a new step on the board-}
+putThisPiece :: Step -> Board -> Board
+putThisPiece step board = (take index board) ++ (getPiece step) : (drop (index + 1) board) where index = position2Index (getPosition step)
+
+{-reverse the pieces after this step-}
+reversePieces :: Step -> Board -> Board
+reversePieces step board = foldl (reversePiece (getPiece step)) board (positionReversed board step)
+
+reversePiece :: Piece -> Board -> Position -> Board
+reversePiece piece board position = (take index board) ++ piece : (drop (index+1) board) where index = position2Index position
+
+{-find all pieces in the opposite color that can be reversed by this step-}
 positionReversed :: Board -> Step -> [Position]
 positionReversed board step
     =  concat [allPositionsInBetween (getPosition step) p |p <- positionInPair board step] 
@@ -75,22 +92,23 @@ findPiecesSameColor_ (b:bs) piece i
     | b == piece  = (index2Position i) : findPiecesSameColor_ bs piece (i+1)
     | otherwise   = findPiecesSameColor_ bs piece (i+1)
 
-    
 {-check whether two positions are adjacent to each other-}
 nextPosition :: Position -> Position -> Bool
 nextPosition (x1, y1) (x2, y2)  = 
      (((abs (x1 - x2)) == 1) && (abs (y1 - y2) <= 1)) || 
      (((abs (y1 - y2)) == 1) && (abs (x1 - x2) <= 1)) 
     
-{-check whether this step can besiege opponent with a certain position
+{-check whether this step can besiege opponent pieces with a certain position
   1. the position must be the same color 
   2. all positions between them must be occupied by the opponent pieces -}
 besiegeOpposite :: Board -> Step -> Position -> Bool
-besiegeOpposite board (p1, piece) p2  
+besiegeOpposite board step p2  
     | not (sameColor piece (getPieceOnBoard board p2)) = False
     | not (positionInLine p1 p2) = False
     | (distancePosition p1 p2) < 2 = False
     | otherwise = foldr (&&) True (map (oppositeColor piece) (map (getPieceOnBoard board) [p | p <- allPositionsInBetween p1 p2])) 
+        where p1    = getPosition step
+              piece = getPiece step
 
 {-check whether two pieces are of the opposite color-}
 oppositeColor :: Piece -> Piece -> Bool
