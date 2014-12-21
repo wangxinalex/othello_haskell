@@ -6,6 +6,135 @@ type ZBoard = [(Position, Piece)]
 type Board = [Piece]
 type Step = (Position, Piece) -- ((Int, Int), Piece)
 
+boardWidth :: Int
+boardWidth = 8
+
+getPosition :: Step->Position
+getPosition ((x,y),piece) = (x,y)
+
+getPiece :: Step->Piece
+getPiece ((x,y),piece) = piece
+
+index2Position :: Int -> Position
+index2Position i = ((i `mod` boardWidth) , (i `div` boardWidth))
+
+position2Index:: Position -> Int
+position2Index (x, y) = (y * boardWidth + x)
+
+{-check whether this step locates in the boundary of the board-}
+stepInBoard :: Board -> Step -> Bool
+stepInBoard board ((x,y),position) = x >= 0 && x < boardWidth && y >= 0 && y < boardWidth 
+
+{-check whether this step locates in am empty grid-}
+stepInEmptyGrid :: Board -> Step -> Bool
+stepInEmptyGrid board ((x,y), position) = board !! (position2Index (x, y)) == Empty
+
+{-check whether this step can reverse other pieces-}
+stepCanReverse :: Board -> Step -> Bool
+stepCanReverse board ((x,y), piece) 
+    = foldr (||) False (map (besiegeOpposite board ((x,y),piece)) [p | p <- findPiecesSameColor board piece])
+
+{-all pieces in the opposite color that can be reversed by this step-}
+positionReversed :: Board -> Step -> [Position]
+positionReversed board step
+    =  concat [allPositionsInBetween (getPosition step) p |p <- positionInPair board step] 
+    
+{-sortPosition :: [Position] -> [Position]-}
+{-sortPosition [] = []-}
+{-sortPosition (p:ps)-}
+    {-= [lp | lp <- ps, (position2Index lp) < (position2Index p)]++[p]++[ gp | gp <- ps, (position2Index gp) > (position2Index p)]-}
+
+{-find all pieces in the same color so as to form a pair -}
+positionInPair :: Board -> Step -> [Position]
+positionInPair board step
+    = [p | p <- findPiecesSameColor board (getPiece step), besiegeOpposite board step p]
+    
+{-check whether this step is adjacent to other pieces-}
+stepNext :: Board -> Step -> Bool
+stepNext board step  = foldr (||) False [nextPosition (getPosition step) step2| step2 <- findallPieces board ]
+
+{-find all positions occupied by a piece-}
+findallPieces :: Board -> [Position]
+findallPieces [] = []
+findallPieces board = findallPieces_ board 0
+
+findallPieces_ :: Board -> Int -> [Position]
+findallPieces_ [] i = []
+findallPieces_ (b:bs) i
+    | b == Empty  =  findallPieces_ bs (i+1)
+    | otherwise   =  (index2Position i): findallPieces_ bs (i+1)
+
+{-find all positions occupied by a piece of the same color-}
+findPiecesSameColor :: Board -> Piece -> [Position]
+findPiecesSameColor [] step = []
+findPiecesSameColor board piece = findPiecesSameColor_ board piece 0
+
+findPiecesSameColor_ :: Board -> Piece -> Int -> [Position]
+findPiecesSameColor_ [] piece i = []
+findPiecesSameColor_ (b:bs) piece i 
+    | b == piece  = (index2Position i) : findPiecesSameColor_ bs piece (i+1)
+    | otherwise   = findPiecesSameColor_ bs piece (i+1)
+
+    
+{-check whether two positions are adjacent to each other-}
+nextPosition :: Position -> Position -> Bool
+nextPosition (x1, y1) (x2, y2)  = 
+     (((abs (x1 - x2)) == 1) && (abs (y1 - y2) <= 1)) || 
+     (((abs (y1 - y2)) == 1) && (abs (x1 - x2) <= 1)) 
+    
+{-check whether this step can besiege opponent with a certain position
+  1. the position must be the same color 
+  2. all positions between them must be occupied by the opponent pieces -}
+besiegeOpposite :: Board -> Step -> Position -> Bool
+besiegeOpposite board (p1, piece) p2  
+    | not (sameColor piece (getPieceOnBoard board p2)) = False
+    | not (positionInLine p1 p2) = False
+    | (distancePosition p1 p2) < 2 = False
+    | otherwise = foldr (&&) True (map (oppositeColor piece) (map (getPieceOnBoard board) [p | p <- allPositionsInBetween p1 p2])) 
+
+{-check whether two pieces are of the opposite color-}
+oppositeColor :: Piece -> Piece -> Bool
+oppositeColor pi1 pi2 = (pi1 == White && pi2 == Black) || (pi1 == Black && pi2 == White)
+
+{-check if two pieces are of the same color (both not empty)-}
+sameColor :: Piece -> Piece -> Bool
+sameColor pi1 pi2 = (pi1 == White && pi2 == White) || (pi1 == Black && pi2 == Black)
+
+{-check whether two positions are in a line-}
+positionInLine :: Position -> Position -> Bool
+positionInLine (x1, y1) (x2, y2) 
+    = (x1 == x2) || (y1 == y2) || abs(x1 - x2) == abs (y1 - y2)
+
+{-find all position between two positions-}
+allPositionsInBetween :: Position -> Position -> [Position]
+allPositionsInBetween p1 p2
+    | not (positionInLine p1 p2) = []
+    | distancePosition p1 p2 < 2 = []
+    | otherwise                  = allPositionsInBetween_ p1 p2
+
+allPositionsInBetween_ :: Position -> Position -> [Position]
+allPositionsInBetween_ (x1, y1) (x2, y2)
+    | x1 == x2  = [(x1, y) | y <- [(y1' + 1) .. (y2' - 1)]] 
+    | y1 == y2  = [(x, y1) | x <- [(x1' + 1) .. (x2' - 1)]]
+    | otherwise = [(x, y)  | x <- [(x1' + 1) .. (x2' - 1)], y <- [(y1' + 1) .. (y2' - 1)], (abs (x - x1)) == (abs (y - y1))]
+            where y1' = min y1 y2
+                  y2' = max y1 y2
+                  x1' = min x1 x2
+                  x2' = max x1 x2
+
+{-get the piece of a certain position on the board-}
+getPieceOnBoard :: Board -> Position -> Piece
+getPieceOnBoard board p = board !! (position2Index p)
+
+{-find the number of positions between two positions-}
+distancePosition :: Position -> Position -> Int
+distancePosition (x1,y1) (x2,y2) 
+    | x1 - x2 == 0 = abs (y1 - y2)
+    | otherwise    = abs (x1 - x2)
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
 -- initial a board of size n with four pieces occupied
 initialZBoard:: Int -> ZBoard
 initialZBoard size = [((x, y), Empty) | x <- [1..size `div` 2-1], y <- [1..size]]

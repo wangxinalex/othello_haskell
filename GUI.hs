@@ -20,29 +20,6 @@ padding = 27
 width :: Int
 width = 56
 
-boardWidth :: Int
-boardWidth = 8
-
-newBoard :: Int -> Board
-newBoard width = (replicate pad Empty) ++ [White, Black] ++ (replicate (width - 2) Empty) ++ [Black, White] ++ (replicate pad Empty) where pad = (width+1)*((width `div` 2) - 1)
-
-index2Position :: Int -> Position
-index2Position i = ((i `mod` boardWidth) , (i `div` boardWidth))
-
-board2ZBoard :: Board -> ZBoard
-board2ZBoard board
-    = b2Z 0 board
-
-b2Z :: Int -> Board -> ZBoard
-b2Z i [] = []
-b2Z i (b:bs) = ((index2Position i), b) : b2Z (i+1) bs
-
-zBoard2Board :: ZBoard -> Board
-zBoard2Board zb = zBoard2Board_ (sortZBoard zb)
-
-zBoard2Board_ :: ZBoard -> Board
-zBoard2Board_ [] = []
-zBoard2Board_ (((x,y),piece):zbs) = piece : zBoard2Board zbs
 
 main = start gui
 
@@ -123,16 +100,17 @@ infoRules w
 putPieces :: Panel() -> Var Board -> Var Piece -> Point -> IO ()
 putPieces pan varBoard varColor (Point x y) = 
     do color <- varGet varColor
-       let (x_pos, y_pos) = getPosition (x,y)
+       let (x_pos, y_pos) = generatePosition (x,y)
            step = ((x_pos, y_pos), color)
        board <- varGet varBoard
        putStrLn $ "x = " ++ show x_pos ++ ", y = "++ show y_pos
-       print (findPiecesSameColor board color)
-       print (map (besiegeOpposite board step) (findPiecesSameColor board color))
+       {-print (findPiecesSameColor board color)-}
+       {-print (map (besiegeOpposite board step) (findPiecesSameColor board color))-}
+       print (positionReversed board step)
        {-print (map (oppositeColor color) (map (getPiece board) (allPositionsInBetween (3,4) (x_pos, y_pos))))-}
        varUpdate varBoard (changeBoard step)
        newBoard <- varGet varBoard
-       print (findallPieces newBoard)
+       {-print (findallPieces newBoard)-}
        varUpdate varColor (changeColor board step)
        repaint pan
        return ()
@@ -142,90 +120,27 @@ putPieces pan varBoard varColor (Point x y) =
  2. no picec in the current position-}
 validStep :: Board -> Step -> Bool
 validStep board step = (stepInBoard board step) && (stepInEmptyGrid board step) && (stepNext board step) && (stepCanReverse board step)
- 
-stepInBoard :: Board -> Step -> Bool
-stepInBoard board ((x,y),position) = x >= 0 && x < boardWidth && y >= 0 && y < boardWidth 
 
-stepInEmptyGrid :: Board -> Step -> Bool
-stepInEmptyGrid board ((x,y), position) = board !! (position2Index (x, y)) == Empty
+{-change the board status for a valid step-}
+changeBoard :: Step -> Board -> Board
+changeBoard step board 
+    | not (validStep board step) = board
+    | otherwise = putThisPiece step (reversePieces step board) -- first reverse the pieces then put this new step on the board
 
-stepCanReverse :: Board -> Step -> Bool
-stepCanReverse board ((x,y), piece) 
-    = foldr (||) False (map (besiegeOpposite board ((x,y),piece)) [p | p <- findPiecesSameColor board piece])
+{-put a new step on the board-}
+putThisPiece :: Step -> Board -> Board
+putThisPiece step board = (take index board) ++ (getPiece step) : (drop (index + 1) board) where index = position2Index (getPosition step)
 
-stepNext :: Board -> Step -> Bool
-stepNext board ((x,y),p)  = foldr (||) False [nextPosition (x,y) step2| step2 <- findallPieces board ]
+{-reverse the pieces-}
+reversePieces :: Step -> Board -> Board
+reversePieces step board = foldl (reversePiece (getPiece step)) board (positionReversed board step)
 
+reversePiece :: Piece -> Board -> Position -> Board
+reversePiece piece board position = (take index board) ++ piece : (drop (index+1) board) where index = position2Index position
 
-findallPieces :: Board -> [Position]
-findallPieces [] = []
-findallPieces board = findallPieces_ board 0
-
-findallPieces_ :: Board -> Int -> [Position]
-findallPieces_ [] i = []
-findallPieces_ (b:bs) i
-    | b == Empty  =  findallPieces_ bs (i+1)
-    | otherwise   =  (index2Position i): findallPieces_ bs (i+1)
-
-findPiecesSameColor :: Board -> Piece -> [Position]
-findPiecesSameColor [] step = []
-findPiecesSameColor board piece = findPiecesSameColor_ board piece 0
-
-findPiecesSameColor_ :: Board -> Piece -> Int -> [Position]
-findPiecesSameColor_ [] piece i = []
-findPiecesSameColor_ (b:bs) piece i 
-    | b == piece  = (index2Position i) : findPiecesSameColor_ bs piece (i+1)
-    | otherwise   = findPiecesSameColor_ bs piece (i+1)
-
-    
-nextPosition :: Position -> Position -> Bool
-nextPosition (x1, y1) (x2, y2)  = 
-     (((abs (x1 - x2)) == 1) && (abs (y1 - y2) <= 1)) || 
-     (((abs (y1 - y2)) == 1) && (abs (x1 - x2) <= 1)) 
-    
-besiegeOpposite :: Board -> Step -> Position -> Bool
-besiegeOpposite board (p1, piece) p2  
-    | not (sameColor piece (getPiece board p2)) = False
-    | not (positionInLine p1 p2) = False
-    | (distancePosition p1 p2) < 2 = False
-    | otherwise = foldr (&&) True (map (oppositeColor piece) (map (getPiece board) [p | p <- allPositionsInBetween p1 p2])) 
-
-oppositeColor :: Piece -> Piece -> Bool
-oppositeColor pi1 pi2 = (pi1 == White && pi2 == Black) || (pi1 == Black && pi2 == White)
-
-sameColor :: Piece -> Piece -> Bool
-sameColor pi1 pi2 = (pi1 == White && pi2 == White) || (pi1 == Black && pi2 == Black)
-
-positionInLine :: Position -> Position -> Bool
-positionInLine (x1, y1) (x2, y2) 
-    = (x1 == x2) || (y1 == y2) || abs(x1 - x2) == abs (y1 - y2)
-
-allPositionsInBetween :: Position -> Position -> [Position]
-allPositionsInBetween p1 p2
-    | not (positionInLine p1 p2)                = []
-    | distancePosition p1 p2 < 2                = []
-    | otherwise = allPositionsInBetween_ p1 p2
-
-allPositionsInBetween_ :: Position -> Position -> [Position]
-allPositionsInBetween_ (x1, y1) (x2, y2)
-    | x1 == x2  = [(x1, y) | y <- [(y1' + 1) .. (y2' - 1)]] 
-    | y1 == y2  = [(x, y1) | x <- [(x1' + 1) .. (x2' - 1)]]
-    | otherwise = [(x, y)  | x <- [(x1' + 1) .. (x2' - 1)], y <- [(y1' + 1) .. (y2' - 1)], (x - x1') == (y - y1')]
-            where y1' = min y1 y2
-                  y2' = max y1 y2
-                  x1' = min x1 x2
-                  x2' = max x1 x2
-
-getPiece :: Board -> Position -> Piece
-getPiece board p = board !! (position2Index p)
-
-distancePosition :: Position -> Position -> Int
-distancePosition (x1,y1) (x2,y2) 
-    | x1 - x2 == 0 = abs (y1 - y2)
-    | otherwise    = abs (x1 - x2)
-
-{-stepCanReverse :: Board -> Step -> Bool-}
-{-stepCanReverse = -}
+{-generate the initial board-}
+newBoard :: Int -> Board
+newBoard width = (replicate pad Empty) ++ [White, Black] ++ (replicate (width - 2) Empty) ++ [Black, White] ++ (replicate pad Empty) where pad = (width+1)*((width `div` 2) - 1)
 
 {-change the piece color for a valid step-}
 changeColor :: Board -> Step -> Piece -> Piece
@@ -234,24 +149,15 @@ changeColor board step color
     | color == Black  = White
     | color == White  = Black
 
-{-change the board status for a valid step-}
-changeBoard :: Step -> Board -> Board
-changeBoard ((x,y),piece) board 
-    | not (validStep board ((x,y),piece)) = board
-    | otherwise = (take index board) ++ piece : (drop (index + 1) board) where index = position2Index (x, y)
-
-position2ZPosition :: Position -> Position
-position2ZPosition (x, y) = (x + 1, y + 1)
-
-position2Index:: Position -> Int
-position2Index (x, y) = (y * boardWidth + x)
-
 drawBackground :: [Bitmap()] -> Var Board -> DC() -> Rect -> IO()
 drawBackground bmps varPieces dc (Rect x y w h) = 
     do pieces <- varGet varPieces
        drawBitmap dc (bmps !! boardIndex) pointZero False []
        drawPieces dc pieces bmps
        return ()
+
+for :: Int -> Int -> (Int -> IO ()) -> IO ()
+for x y f = sequence_ $ map f [x..y]
 
 drawPieces :: DC() -> Board ->[Bitmap()] -> IO ()
 drawPieces dc gameBoard bmps = 
@@ -262,11 +168,9 @@ drawPieces dc gameBoard bmps =
                     _     -> return () )
         return ()
 
-for :: Int -> Int -> (Int -> IO ()) -> IO ()
-for x y f = sequence_ $ map f [x..y]
-
-getPosition::(Int, Int)->(Int,Int)
-getPosition (x,y) = 
+{-translate the position of the screen to the position on the board-}
+generatePosition::(Int, Int)->(Int,Int)
+generatePosition (x,y) = 
     let x_pos = ((x - padding) `div` width) 
         y_pos = ((y - padding) `div` width)
     in (x_pos, y_pos) 
