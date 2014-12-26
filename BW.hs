@@ -239,7 +239,7 @@ hardStep level board weight step
 		let
 			newBoard = putThisPiece step (reversePieces step board)) weight
 		in
-			weight + (hardStep (level-1) newBoard
+			weight + 1
 	
 newBoard2:: Board
 newBoard2 = [Empty, Empty, Empty, Empty, Empty, White, Black, Empty, Empty, Black, White, Empty, Empty, Empty, Empty, Empty]
