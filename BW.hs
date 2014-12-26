@@ -21,6 +21,38 @@ index2Position i = ((i `mod` boardWidth) , (i `div` boardWidth))
 position2Index:: Position -> Int
 position2Index (x, y) = (y * boardWidth + x)
 
+{-generate the initial board-}
+newBoard :: Int -> Board
+newBoard width = (replicate pad Empty) ++ [White, Black] ++ (replicate (width - 2) Empty) ++ [Black, White] ++ (replicate pad Empty) where pad = (width+1)*((width `div` 2) - 1)
+
+reinitializeBoard :: Board -> Board
+reinitializeBoard b = newBoard boardWidth
+
+reinitializeColor::Piece->Piece
+reinitializeColor color = Black
+
+{-check if the game ends-}
+isGameEnd :: Board -> Piece -> Bool
+isGameEnd board piece = ((countPieces board Empty) == 0) || ((length $ allValidPositions board piece) == 0)
+
+{-return the color of the winner, Empty for a draw-}
+whoWins ::  Board -> Piece -> Piece
+whoWins  board piece
+    | (countPieces board Empty) > 0 && (length $ allValidPositions board piece) == 0  = getOppositeColor piece
+    | (countPieces board Empty) == 0 && countPieces board piece > boardWidth * boardWidth `div` 2 = piece
+    | (countPieces board Empty) == 0 && countPieces board piece < boardWidth * boardWidth `div` 2 = getOppositeColor piece
+    | (countPieces board Empty) == 0 && countPieces board piece == boardWidth * boardWidth `div` 2= Empty 
+
+countPieces :: Board -> Piece -> Int
+countPieces board color = length [piece | piece <- board, piece == color]
+
+
+getOppositeColor::Piece->Piece
+getOppositeColor piece
+    | piece == Black = White
+    | piece == White = Black
+    | otherwise = error "No opposite color"
+
 {-check whether this step locates in the boundary of the board-}
 stepInBoard :: Board -> Step -> Bool
 stepInBoard board ((x,y),position) = x >= 0 && x < boardWidth && y >= 0 && y < boardWidth 
@@ -39,6 +71,9 @@ stepCanReverse board step
  2. no picec in the current position-}
 validStep :: Board -> Step -> Bool
 validStep board step = (stepInBoard board step) && (stepInEmptyGrid board step) && (stepNext board step) && (stepCanReverse board step)
+
+allValidPositions :: Board -> Piece -> [Position]
+allValidPositions board piece = [(x,y)| x <- [0 .. (boardWidth - 1)], y <- [0 .. (boardWidth - 1)], validStep board ((x,y), piece)]
 
 {-put a new step on the board-}
 putThisPiece :: Step -> Board -> Board
