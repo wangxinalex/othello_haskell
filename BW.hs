@@ -1,4 +1,5 @@
 module BW where
+import System.Random
 data Piece = White | Black | Empty deriving (Eq, Show)
 type Position = (Int, Int)
 type ZBoard = [(Position, Piece)]
@@ -38,10 +39,9 @@ isGameEnd board piece = ((countPieces board Empty) == 0) || ((length $ allValidP
 {-return the color of the winner, Empty for a draw-}
 whoWins ::  Board -> Piece -> Piece
 whoWins  board piece
-    | (countPieces board Empty) > 0 && (length $ allValidPositions board piece) == 0  = getOppositeColor piece
-    | (countPieces board Empty) == 0 && countPieces board piece > boardWidth * boardWidth `div` 2 = piece
-    | (countPieces board Empty) == 0 && countPieces board piece < boardWidth * boardWidth `div` 2 = getOppositeColor piece
-    | (countPieces board Empty) == 0 && countPieces board piece == boardWidth * boardWidth `div` 2= Empty 
+    | countPieces board piece > boardWidth * boardWidth `div` 2 = piece
+    | countPieces board piece < boardWidth * boardWidth `div` 2 = getOppositeColor piece
+    | countPieces board piece == boardWidth * boardWidth `div` 2 = Empty 
 
 countPieces :: Board -> Piece -> Int
 countPieces board color = length [piece | piece <- board, piece == color]
@@ -68,7 +68,7 @@ stepCanReverse board step
 
 {-check whether the step is valid.
  1. within the range of board
- 2. no picec in the current position-}
+ 2. no picec in the current position -}
 validStep :: Board -> Step -> Bool
 validStep board step = (stepInBoard board step) && (stepInEmptyGrid board step) && (stepNext board step) && (stepCanReverse board step)
 
@@ -185,84 +185,91 @@ distancePosition (x1,y1) (x2,y2)
     | x1 - x2 == 0 = abs (y1 - y2)
     | otherwise    = abs (x1 - x2)
 
+generateRandom::Int->IO Int
+generateRandom max
+    = do r1 <- getStdGen
+         let (x, r2) = randomR (0, max) r1
+         setStdGen r2
+         return x
+
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
 -- initial a board of size n with four pieces occupied
-initialZBoard:: Int -> ZBoard
-initialZBoard size = [((x, y), Empty) | x <- [1..size `div` 2-1], y <- [1..size]]
-					++ [((x, y), Empty) | x <- [size `div` 2+2..size], y <- [1..size]]
-					++ [((x, y), Empty) | x <- [2..(size-1)], y <- [size `div` 2+2..size]]
-					++ [((x, y), Empty) | x <- [2..(size-1)], y <- [1..size `div` 2-1]]
-					++ [((size `div` 2, size `div` 2), Black), ((size `div` 2+1, size `div` 2+1), Black)]
-					++ [((size `div` 2, size `div` 2+1), White), ((size `div` 2+1, size `div` 2), White)]
+{-initialZBoard:: Int -> ZBoard-}
+{-initialZBoard size = [((x, y), Empty) | x <- [1..size `div` 2-1], y <- [1..size]]-}
+					{-++ [((x, y), Empty) | x <- [size `div` 2+2..size], y <- [1..size]]-}
+					{-++ [((x, y), Empty) | x <- [2..(size-1)], y <- [size `div` 2+2..size]]-}
+					{-++ [((x, y), Empty) | x <- [2..(size-1)], y <- [1..size `div` 2-1]]-}
+					{-++ [((size `div` 2, size `div` 2), Black), ((size `div` 2+1, size `div` 2+1), Black)]-}
+					{-++ [((size `div` 2, size `div` 2+1), White), ((size `div` 2+1, size `div` 2), White)]-}
 
-convertToPiece:: String -> Piece
-convertToPiece "White" = White
-convertToPiece "Black" = Black
-convertToPiece "Empty" = Empty
+{-convertToPiece:: String -> Piece-}
+{-convertToPiece "White" = White-}
+{-convertToPiece "Black" = Black-}
+{-convertToPiece "Empty" = Empty-}
 
--- find a piece at a certain position
-findPieceWithPos:: Position -> ZBoard -> (Position, Piece)
-findPieceWithPos (x, y) board = head [((x2, y2), p) | ((x2, y2), p) <- board, x == x2, y == y2]
+{--- find a piece at a certain position-}
+{-findPieceWithPos:: Position -> ZBoard -> (Position, Piece)-}
+{-findPieceWithPos (x, y) board = head [((x2, y2), p) | ((x2, y2), p) <- board, x == x2, y == y2]-}
 
--- sort the board
-sortZBoard:: ZBoard -> ZBoard
-sortZBoard board = [findPieceWithPos (x, y) board| x <- [1..borderSize board], y <- [1..borderSize board]]
+{--- sort the board-}
+{-sortZBoard:: ZBoard -> ZBoard-}
+{-sortZBoard board = [findPieceWithPos (x, y) board| x <- [1..borderSize board], y <- [1..borderSize board]]-}
 
 -- return the size of the border
 borderSize:: ZBoard -> Int
 borderSize board = 4 -- (sqrt (length board))
 					
 -- check whether a move of a certain color is available					
-checkAvailable:: Piece -> Position -> ZBoard -> Bool
-checkAvailable White (x, y) board = foldr (||) False [next (x, y) (x2, y2) | ((x2, y2), Black) <- board]
-checkAvailable Black (x, y) board = foldr (||) False [next (x, y) (x2, y2) | ((x2, y2), White) <- board]
+{-checkAvailable:: Piece -> Position -> ZBoard -> Bool-}
+{-checkAvailable White (x, y) board = foldr (||) False [next (x, y) (x2, y2) | ((x2, y2), Black) <- board]-}
+{-checkAvailable Black (x, y) board = foldr (||) False [next (x, y) (x2, y2) | ((x2, y2), White) <- board]-}
 
 -- check whether two positions are next to each other
-next:: Position -> Position -> Bool
-next (x1, y1) (x2, y2)
-	| x1 == x2 && y1 == y2 + 1 = True
-	| x1 == x2 && y1 == y2 - 1 = True
-	| y1 == y2 && x1 == x2 + 1 = True
-	| y1 == y2 && x1 == x2 - 1 = True
-	| otherwise = False
+{-next:: Position -> Position -> Bool-}
+{-next (x1, y1) (x2, y2)-}
+	{-| x1 == x2 && y1 == y2 + 1 = True-}
+	{-| x1 == x2 && y1 == y2 - 1 = True-}
+	{-| y1 == y2 && x1 == x2 + 1 = True-}
+	{-| y1 == y2 && x1 == x2 - 1 = True-}
+	{-| otherwise = False-}
 
--- find left border of the piece of the same color
-findLeftBorder:: Piece -> Position -> ZBoard -> Int
-findLeftBorder p (x, y) board = foldr min y [y2 | ((x2, y2), p2) <- board, x == x2, p == p2]
+{--- find left border of the piece of the same color-}
+{-findLeftBorder:: Piece -> Position -> ZBoard -> Int-}
+{-findLeftBorder p (x, y) board = foldr min y [y2 | ((x2, y2), p2) <- board, x == x2, p == p2]-}
 
--- find right border of the piece of the same color
-findRightBorder:: Piece -> Position -> ZBoard -> Int
-findRightBorder p (x, y) board = foldr max y [y2 | ((x2, y2), p2) <- board, x == x2, p == p2]
+{--- find right border of the piece of the same color-}
+{-findRightBorder:: Piece -> Position -> ZBoard -> Int-}
+{-findRightBorder p (x, y) board = foldr max y [y2 | ((x2, y2), p2) <- board, x == x2, p == p2]-}
 
--- find up border of the piece of the same color
-findUpBorder:: Piece -> Position -> ZBoard -> Int
-findUpBorder p (x, y) board = foldr min x [x2 | ((x2, y2), p2) <- board, y == y2, p == p2]
+{--- find up border of the piece of the same color-}
+{-findUpBorder:: Piece -> Position -> ZBoard -> Int-}
+{-findUpBorder p (x, y) board = foldr min x [x2 | ((x2, y2), p2) <- board, y == y2, p == p2]-}
 
--- find bottom border of the piece of the same color
-findBottomBorder:: Piece -> Position -> ZBoard -> Int
-findBottomBorder p (x, y) board = foldr max x [x2 | ((x2, y2), p2) <- board, y == y2, p == p2]
+{--- find bottom border of the piece of the same color-}
+{-findBottomBorder:: Piece -> Position -> ZBoard -> Int-}
+{-findBottomBorder p (x, y) board = foldr max x [x2 | ((x2, y2), p2) <- board, y == y2, p == p2]-}
 
--- update the board after one move
-move:: Piece -> Position -> ZBoard -> ZBoard
-move Black (x, y) board
-	| checkAvailable Black (x, y) board == False = sortZBoard board
-	| otherwise = sortZBoard ([((x2, y2), Empty) | ((x2, y2), Empty) <- board, (x2 /= x || y2 /= y)] ++ [(a, Black) | (a, Black) <- board] ++ [((x, y), Black)]
-		++ [((x2, y2), Black) | ((x2, y2), White) <- board, x == x2, elem y2 [(findLeftBorder Black (x, y) board)..(findRightBorder Black (x, y) board)]]
-		++ [((x2, y2), Black) | ((x2, y2), White) <- board, y == y2, elem x2 [(findUpBorder Black (x, y) board)..(findBottomBorder Black (x, y) board)]]
-		++ [((x2, y2), White) | ((x2, y2), White) <- board, x == x2, elem y2 ([1..(findLeftBorder Black (x, y) board)]++[(findRightBorder Black (x, y) board)..4])]
-		++ [((x2, y2), White) | ((x2, y2), White) <- board, y == y2, elem x2 ([1..(findUpBorder Black (x, y) board)]++[(findBottomBorder Black (x, y) board)..4])]
-		++ [((x2, y2), White) | ((x2, y2), White) <- board, x2 /= x, y2 /= y])
+{--- update the board after one move-}
+{-move:: Piece -> Position -> ZBoard -> ZBoard-}
+{-move Black (x, y) board-}
+	{-| checkAvailable Black (x, y) board == False = sortZBoard board-}
+	{-| otherwise = sortZBoard ([((x2, y2), Empty) | ((x2, y2), Empty) <- board, (x2 /= x || y2 /= y)] ++ [(a, Black) | (a, Black) <- board] ++ [((x, y), Black)]-}
+		{-++ [((x2, y2), Black) | ((x2, y2), White) <- board, x == x2, elem y2 [(findLeftBorder Black (x, y) board)..(findRightBorder Black (x, y) board)]]-}
+		{-++ [((x2, y2), Black) | ((x2, y2), White) <- board, y == y2, elem x2 [(findUpBorder Black (x, y) board)..(findBottomBorder Black (x, y) board)]]-}
+		{-++ [((x2, y2), White) | ((x2, y2), White) <- board, x == x2, elem y2 ([1..(findLeftBorder Black (x, y) board)]++[(findRightBorder Black (x, y) board)..4])]-}
+		{-++ [((x2, y2), White) | ((x2, y2), White) <- board, y == y2, elem x2 ([1..(findUpBorder Black (x, y) board)]++[(findBottomBorder Black (x, y) board)..4])]-}
+		{-++ [((x2, y2), White) | ((x2, y2), White) <- board, x2 /= x, y2 /= y])-}
 
-move White (x, y) board
-	| checkAvailable White (x, y) board == False = sortZBoard board
-	| otherwise = sortZBoard ([((x2, y2), Empty) | ((x2, y2), Empty) <- board, (x2 /= x || y2 /= y)] ++ [(a, White) | (a, White) <- board] ++ [((x, y), White)]
-		++ [((x2, y2), White) | ((x2, y2), Black) <- board, x == x2, elem y2 [(findLeftBorder White (x, y) board)..(findRightBorder White (x, y) board)]]
-		++ [((x2, y2), White) | ((x2, y2), Black) <- board, y == y2, elem x2 [(findUpBorder White (x, y) board)..(findBottomBorder White (x, y) board)]]
-		++ [((x2, y2), Black) | ((x2, y2), Black) <- board, x == x2, elem y2 ([1..(findLeftBorder White (x, y) board)]++[(findRightBorder White (x, y) board)..4])]
-		++ [((x2, y2), Black) | ((x2, y2), Black) <- board, y == y2, elem x2 ([1..(findUpBorder White (x, y) board)]++[(findBottomBorder White (x, y) board)..4])]
-		++ [((x2, y2), Black) | ((x2, y2), Black) <- board, x2 /= x, y2 /= y])
+{-move White (x, y) board-}
+	{-| checkAvailable White (x, y) board == False = sortZBoard board-}
+	{-| otherwise = sortZBoard ([((x2, y2), Empty) | ((x2, y2), Empty) <- board, (x2 /= x || y2 /= y)] ++ [(a, White) | (a, White) <- board] ++ [((x, y), White)]-}
+		{-++ [((x2, y2), White) | ((x2, y2), Black) <- board, x == x2, elem y2 [(findLeftBorder White (x, y) board)..(findRightBorder White (x, y) board)]]-}
+		{-++ [((x2, y2), White) | ((x2, y2), Black) <- board, y == y2, elem x2 [(findUpBorder White (x, y) board)..(findBottomBorder White (x, y) board)]]-}
+		{-++ [((x2, y2), Black) | ((x2, y2), Black) <- board, x == x2, elem y2 ([1..(findLeftBorder White (x, y) board)]++[(findRightBorder White (x, y) board)..4])]-}
+		{-++ [((x2, y2), Black) | ((x2, y2), Black) <- board, y == y2, elem x2 ([1..(findUpBorder White (x, y) board)]++[(findBottomBorder White (x, y) board)..4])]-}
+		{-++ [((x2, y2), Black) | ((x2, y2), Black) <- board, x2 /= x, y2 /= y])-}
 
 {-testS = move Black (4,3)(move White (3,4) (move Black (1,3) (initialZBoard 4)))-}
 
