@@ -1,5 +1,7 @@
 module BW where
 import System.Random
+import System.Time
+--module BW where
 data Piece = White | Black | Empty deriving (Eq, Show)
 type Position = (Int, Int)
 type ZBoard = [(Position, Piece)]
@@ -45,7 +47,6 @@ whoWins  board piece
 
 countPieces :: Board -> Piece -> Int
 countPieces board color = length [piece | piece <- board, piece == color]
-
 
 getOppositeColor::Piece->Piece
 getOppositeColor piece
@@ -192,6 +193,40 @@ generateRandom max
          setStdGen r2
          return x
 
+-- find all possible steps
+findAvailableSteps:: Piece -> Board -> [Step]
+findAvailableSteps piece board = filter (validStep board) [((x, y), piece) | x <- [0.. (boardWidth - 1)], y <- [0.. (boardWidth - 1)]]
+
+-- easy AI: randomly find an available step
+easyAI:: Piece -> Board -> Step
+easyAI piece board = (findAvailableSteps piece board) !! (getRan (length (findAvailableSteps piece board)) - 1)
+
+-- get a random number of range
+getRan:: Int -> Int
+getRan range = getFrom (randomR (1, range) (mkStdGen 1))
+
+getFrom:: (Int,StdGen) -> Int
+getFrom (a, b) = a
+
+-- get the step that could reverse most chesses
+mediumAI:: Piece -> Board -> (Step, Int)
+mediumAI piece board = last $ quick_sort (zip (findAvailableSteps piece board) (map (reverseNum board) (findAvailableSteps piece board)))
+
+-- get the reverse number of a certain chess
+reverseNum:: Board -> Step -> Int
+reverseNum board s = length (positionReversed board s)
+
+-- QuickSort
+quick_sort:: [(Step, Int)] -> [(Step, Int)]
+quick_sort [] = []
+quick_sort ((x, i):[]) = [(x, i)]
+quick_sort ((x, i): xs) =
+	let smaller_or_equal_list = [(a, b)| (a, b)<-xs, b<=i]
+	    larger_list = [(a, b)| (a, b)<-xs, b>i]
+	in quick_sort smaller_or_equal_list ++ [(x, i)] ++ quick_sort larger_list
+
+newBoard2:: Board
+newBoard2 = [Empty, Empty, Empty, Empty, Empty, White, Black, Empty, Empty, Black, White, Empty, Empty, Empty, Empty, Empty]
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
@@ -218,8 +253,8 @@ generateRandom max
 {-sortZBoard board = [findPieceWithPos (x, y) board| x <- [1..borderSize board], y <- [1..borderSize board]]-}
 
 -- return the size of the border
-borderSize:: ZBoard -> Int
-borderSize board = 4 -- (sqrt (length board))
+{-borderSize:: ZBoard -> Int-}
+{-borderSize board = 4 -- (sqrt (length board))-}
 					
 -- check whether a move of a certain color is available					
 {-checkAvailable:: Piece -> Position -> ZBoard -> Bool-}
