@@ -1,4 +1,6 @@
-module BW where
+import System.Random
+import System.Time
+--module BW where
 data Piece = White | Black | Empty deriving (Eq, Show)
 type Position = (Int, Int)
 type ZBoard = [(Position, Piece)]
@@ -7,7 +9,7 @@ type Board = [Piece]
 type Step = (Position, Piece) -- ((Int, Int), Piece)
 
 boardWidth :: Int
-boardWidth = 8
+boardWidth = 4
 
 getPosition :: Step->Position
 getPosition ((x,y),piece) = (x,y)
@@ -150,6 +152,40 @@ distancePosition (x1,y1) (x2,y2)
     | x1 - x2 == 0 = abs (y1 - y2)
     | otherwise    = abs (x1 - x2)
 
+-- find all possible steps
+findAvailableSteps:: Piece -> Board -> [Step]
+findAvailableSteps piece board = filter (validStep board) [((x, y), piece) | x <- [0.. (boardWidth - 1)], y <- [0.. (boardWidth - 1)]]
+
+-- easy AI: randomly find an available step
+easyAI:: Piece -> Board -> Step
+easyAI piece board = (findAvailableSteps piece board) !! (getRan (length (findAvailableSteps piece board)) - 1)
+
+-- get a random number of range
+getRan:: Int -> Int
+getRan range = getFrom (randomR (1, range) (mkStdGen 1))
+
+getFrom:: (Int,StdGen) -> Int
+getFrom (a, b) = a
+
+-- get the step that could reverse most chesses
+mediumAI:: Piece -> Board -> (Step, Int)
+mediumAI piece board = last $ quick_sort (zip (findAvailableSteps piece board) (map (reverseNum board) (findAvailableSteps piece board)))
+
+-- get the reverse number of a certain chess
+reverseNum:: Board -> Step -> Int
+reverseNum board s = length (positionReversed board s)
+
+-- QuickSort
+quick_sort:: [(Step, Int)] -> [(Step, Int)]
+quick_sort [] = []
+quick_sort ((x, i):[]) = [(x, i)]
+quick_sort ((x, i): xs) =
+	let smaller_or_equal_list = [(a, b)| (a, b)<-xs, b<=i]
+	    larger_list = [(a, b)| (a, b)<-xs, b>i]
+	in quick_sort smaller_or_equal_list ++ [(x, i)] ++ quick_sort larger_list
+
+newBoard2:: Board
+newBoard2 = [Empty, Empty, Empty, Empty, Empty, White, Black, Empty, Empty, Black, White, Empty, Empty, Empty, Empty, Empty]
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
@@ -181,12 +217,12 @@ borderSize board = 4 -- (sqrt (length board))
 					
 -- check whether a move of a certain color is available					
 checkAvailable:: Piece -> Position -> ZBoard -> Bool
-checkAvailable White (x, y) board = foldr (||) False [next (x, y) (x2, y2) | ((x2, y2), Black) <- board]
-checkAvailable Black (x, y) board = foldr (||) False [next (x, y) (x2, y2) | ((x2, y2), White) <- board]
+checkAvailable White (x, y) board = foldr (||) False [nextTo (x, y) (x2, y2) | ((x2, y2), Black) <- board]
+checkAvailable Black (x, y) board = foldr (||) False [nextTo (x, y) (x2, y2) | ((x2, y2), White) <- board]
 
 -- check whether two positions are next to each other
-next:: Position -> Position -> Bool
-next (x1, y1) (x2, y2)
+nextTo:: Position -> Position -> Bool
+nextTo (x1, y1) (x2, y2)
 	| x1 == x2 && y1 == y2 + 1 = True
 	| x1 == x2 && y1 == y2 - 1 = True
 	| y1 == y2 && x1 == x2 + 1 = True
