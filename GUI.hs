@@ -101,20 +101,25 @@ putPieces frame pan varBoard varColor (Point x y) =
            step = ((x_pos, y_pos), color)
        board <- varGet varBoard
        putStrLn $ "x = " ++ show x_pos ++ ", y = "++ show y_pos
-       {-print (findPiecesSameColor board color)-}
-       {-print (map (besiegeOpposite board step) (findPiecesSameColor board color))-}
-       {-print $ positionReversed board step-}
-       {-print (map (oppositeColor color) (map (getPiece board) (allPositionsInBetween (3,4) (x_pos, y_pos))))-}
-       varUpdate varBoard (changeBoard step)
-       {-newBoard <- varGet varBoard-}
-       {-print (findallPieces newBoard)-}
-       varUpdate varColor (changeColor board step)
-       color <- varGet varColor
-       board <- varGet varBoard
-       print $ allValidPositions board color
-       checkWin frame varBoard varColor 
-       repaint pan
-       return ()
+       if (not (validStep board step)) then
+           return ()
+           else
+                do varUpdate varBoard (changeBoard step)
+                   varUpdate varColor (changeColor step)
+                   color <- varGet varColor
+                   board <- varGet varBoard
+                   {-print $ allValidPositions board color-}
+                   if (isGameEnd board color) then
+                       checkWin frame varBoard varColor 
+                       else
+                           do let len = length (allValidPositions board color)
+                              index <- generateRandom (len - 1)
+                              let step = (((allValidPositions board color) !! index), color)
+                              varUpdate varBoard (changeBoard step)
+                              varUpdate varColor (changeColor step)
+                              checkWin frame varBoard varColor
+                   repaint pan
+                   return ()
 
 {-check if the game ends and display the winning message-}
 checkWin::Frame a -> Var Board -> Var Piece -> IO()
@@ -122,8 +127,7 @@ checkWin frame varBoard varPiece
     = do board <- varGet varBoard
          piece <- varGet varPiece
          if (isGameEnd board piece) then
-            do 
-               varUpdate varPiece reinitializeColor
+            do varUpdate varPiece reinitializeColor
                varUpdate varBoard reinitializeBoard
                infoWin frame (whoWins board piece)
             else 
@@ -139,13 +143,11 @@ infoWin frame piece
 {-change the board status for a valid step-}
 changeBoard :: Step -> Board -> Board
 changeBoard step board 
-    | not (validStep board step) = board
-    | otherwise = putThisPiece step (reversePieces step board) -- first reverse the pieces then put this new step on the board
+    = putThisPiece step (reversePieces step board) -- first reverse the pieces then put this new step on the board
 
 {-change the piece color for a valid step-}
-changeColor :: Board -> Step -> Piece -> Piece
-changeColor board step color
-    | not (validStep board step) = color       
+changeColor :: Step -> Piece -> Piece
+changeColor step color
     | color == Black  = White
     | color == White  = Black
 
