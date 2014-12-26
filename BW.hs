@@ -202,9 +202,12 @@ getRan range = getFrom (randomR (1, range) (mkStdGen 1))
 getFrom:: (Int,StdGen) -> Int
 getFrom (a, b) = a
 
+getFrom2:: (Step,Int) -> Step
+getFrom2 (a, b) = a
+
 -- get the step that could reverse most chesses
-mediumAI:: Piece -> Board -> (Step, Int)
-mediumAI piece board = last $ quick_sort (zip (findAvailableSteps piece board) (map (reverseNum board) (findAvailableSteps piece board)))
+mediumAI:: Piece -> Board -> Step
+mediumAI piece board = getFrom2 $ last $ quick_sort (zip (findAvailableSteps piece board) (map (reverseNum board) (findAvailableSteps piece board)))
 
 -- get the reverse number of a certain chess
 reverseNum:: Board -> Step -> Int
@@ -219,6 +222,19 @@ quick_sort ((x, i): xs) =
 	    larger_list = [(a, b)| (a, b)<-xs, b>i]
 	in quick_sort smaller_or_equal_list ++ [(x, i)] ++ quick_sort larger_list
 
+-- get the step that could reverse most chesses using dynamic programming
+--hardAI:: Piece -> Board -> (Step, Int)
+--hardAI piece board
+
+hardStep:: Int -> Board -> Int -> Step -> Int
+hardStep level board weight step
+	| level == 0 = weight
+	| otherwise = 
+		let
+			newBoard = putThisPiece step (reversePieces step board)) weight
+		in
+			weight + (hardStep (level-1) newBoard
+	
 newBoard2:: Board
 newBoard2 = [Empty, Empty, Empty, Empty, Empty, White, Black, Empty, Empty, Black, White, Empty, Empty, Empty, Empty, Empty]
 --------------------------------------------------------------------------------
