@@ -10,7 +10,7 @@ type Board = [Piece]
 type Step = (Position, Piece) -- ((Int, Int), Piece)
 
 boardWidth :: Int
-boardWidth = 8
+boardWidth = 4
 
 getPosition :: Step->Position
 getPosition ((x,y),piece) = (x,y)
@@ -229,18 +229,29 @@ quick_sort ((x, i): xs) =
 	in quick_sort smaller_or_equal_list ++ [(x, i)] ++ quick_sort larger_list
 
 -- get the step that could reverse most chesses using dynamic programming
---hardAI:: Piece -> Board -> (Step, Int)
---hardAI piece board
+hardAI:: Piece -> Board -> Step
+hardAI piece board = getFrom2 $ last $ quick_sort $ zip (findAvailableSteps piece board) (map (hardStep 2 0 piece board 0) (findAvailableSteps piece board))
 
-hardStep:: Int -> Board -> Int -> Step -> Int
-hardStep level board weight step
-	| level == 0 = weight
-	| otherwise = 
+-- first: total consideration steps
+-- second: current level (from 0 to n)
+-- fifth: current weight
+-- seventh: final
+hardStep:: Int -> Int -> Piece -> Board -> Int -> Step -> Int
+hardStep level n piece board weight step
+	| level == n = weight
+	| length (findAvailableSteps piece board) == 0 = weight
+	| n `mod` 2 == 0 =
 		let
-			newBoard = putThisPiece step (reversePieces step board)) weight
+			newBoard = putThisPiece step (reversePieces step board)
 		in
-			weight + 1
-	
+			maximum [hardStep level (n+1) (getOppositeColor piece) newBoard (weight + (reverseNum board step)) p | p <- (findAvailableSteps (getOppositeColor piece) newBoard)]
+	| n `mod` 2 == 1 =
+		let
+			newBoard = putThisPiece step (reversePieces step board)
+		in
+			maximum [hardStep level (n+1) (getOppositeColor piece) newBoard (weight - (reverseNum board step)) p | p <- (findAvailableSteps (getOppositeColor piece) newBoard)]
+
+newBoard3 = [White, Black, Empty, Empty, White, Black, White, White, White, Black, Black, Black, White, Black, Empty, Empty]			
 newBoard2:: Board
 newBoard2 = [Empty, Empty, Empty, Empty, Empty, White, Black, Empty, Empty, Black, White, Empty, Empty, Empty, Empty, Empty]
 --------------------------------------------------------------------------------
