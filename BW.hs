@@ -239,7 +239,7 @@ hardAI piece board = getFrom2 $ last $ quick_sort $ zip (findAvailableSteps piec
 hardStep:: Int -> Int -> Piece -> Board -> Int -> Step -> Int
 hardStep level n piece board weight step
 	| level == n = weight
-	| length (findAvailableSteps piece board) == 0 = weight
+	| length (findAvailableSteps (getOppositeColor piece) (putThisPiece step (reversePieces step board))) == 0 = weight
 	| n `mod` 2 == 0 =
 		let
 			newBoard = putThisPiece step (reversePieces step board)
@@ -251,6 +251,41 @@ hardStep level n piece board weight step
 		in
 			maximum [hardStep level (n+1) (getOppositeColor piece) newBoard (weight - (reverseNum board step)) p | p <- (findAvailableSteps (getOppositeColor piece) newBoard)]
 
+-- every position's weight
+pos2Point:: Position -> Int
+pos2Point (x, y)
+	| (x == 0 || x == (boardWidth-1)) && (y == 0 || y == (boardWidth-1)) = 10
+	| (x == 0 || x == (boardWidth-1)) = 5
+	| (y == 0 || y == (boardWidth-1)) = 5
+	| otherwise = 1
+			
+positionPoint:: [Position] -> [Int]
+positionPoint p = map pos2Point p
+
+-- get the step that could reverse most chesses using dynamic programming
+extremeAI:: Piece -> Board -> Step
+extremeAI piece board = getFrom2 $ last $ quick_sort $ zip (findAvailableSteps piece board) (map (extremeStep 4 0 piece board 0) (findAvailableSteps piece board))
+			
+-- first: total consideration steps
+-- second: current level (from 0 to n)
+-- fifth: current weight
+-- seventh: final
+extremeStep:: Int -> Int -> Piece -> Board -> Int -> Step -> Int
+extremeStep level n piece board weight step
+	| level == n = weight
+	| length (findAvailableSteps (getOppositeColor piece) (putThisPiece step (reversePieces step board))) == 0 = weight
+	| n `mod` 2 == 0 =
+		let
+			newBoard = putThisPiece step (reversePieces step board)
+		in
+			maximum [extremeStep level (n+1) (getOppositeColor piece) newBoard (weight + foldr (+) 0 (positionPoint (positionReversed board step))) p | p <- (findAvailableSteps (getOppositeColor piece) newBoard)]
+	| n `mod` 2 == 1 =
+		let
+			newBoard = putThisPiece step (reversePieces step board)
+		in
+			maximum [extremeStep level (n+1) (getOppositeColor piece) newBoard (weight - foldr (+) 0 (positionPoint (positionReversed board step))) p | p <- (findAvailableSteps (getOppositeColor piece) newBoard)]
+
+			
 newBoard3 = [White, Black, Empty, Empty, White, Black, White, White, White, Black, Black, Black, White, Black, Empty, Empty]			
 newBoard2:: Board
 newBoard2 = [Empty, Empty, Empty, Empty, Empty, White, Black, Empty, Empty, Black, White, Empty, Empty, Empty, Empty, Empty]
