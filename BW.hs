@@ -3,6 +3,7 @@ import System.Random
 import System.Time
 --module BW where
 data Piece = White | Black | Empty deriving (Eq, Show)
+data Level = Easy | Medium | Hard | Hell deriving (Eq, Show)
 type Position = (Int, Int)
 type ZBoard = [(Position, Piece)]
 
@@ -10,7 +11,7 @@ type Board = [Piece]
 type Step = (Position, Piece) -- ((Int, Int), Piece)
 
 boardWidth :: Int
-boardWidth = 4
+boardWidth = 8
 
 getPosition :: Step->Position
 getPosition ((x,y),piece) = (x,y)
@@ -28,15 +29,25 @@ position2Index (x, y) = (y * boardWidth + x)
 newBoard :: Int -> Board
 newBoard width = (replicate pad Empty) ++ [White, Black] ++ (replicate (width - 2) Empty) ++ [Black, White] ++ (replicate pad Empty) where pad = (width+1)*((width `div` 2) - 1)
 
-reinitializeBoard :: Board -> Board
-reinitializeBoard b = newBoard boardWidth
+newBoard_w :: Int -> Board
+newBoard_w width = (replicate (pad-1) Empty) ++ [Black, White, Black] ++ (replicate (width - 2) Empty) ++ [Black, White] ++ (replicate pad Empty) where pad = (width+1)*((width `div` 2) - 1)
 
-reinitializeColor::Piece->Piece
-reinitializeColor color = Black
+reinitializeBoard :: Bool -> Board -> Board
+reinitializeBoard bool b 
+    | bool = newBoard boardWidth
+    | otherwise = newBoard_w boardWidth
+
+reinitializeColor::Bool -> Piece->Piece
+reinitializeColor bool color 
+    | bool = Black
+    | otherwise = White
+
+noPositionToPut :: Board -> Piece -> Bool
+noPositionToPut board piece = (length $ allValidPositions board piece) == 0
 
 {-check if the game ends-}
 isGameEnd :: Board -> Piece -> Bool
-isGameEnd board piece = ((countPieces board Empty) == 0) || ((length $ allValidPositions board piece) == 0)
+isGameEnd board piece = ((countPieces board Empty) == 0) || ((noPositionToPut board piece) && (noPositionToPut board (getOppositeColor piece)))
 
 {-return the color of the winner, Empty for a draw-}
 whoWins ::  Board -> Piece -> Piece
