@@ -74,13 +74,13 @@ gui = do
                layout    :=  minsize (sz 500 500) $ widget boardPanel]
 
         set new [on command := do humanFirst <- get r0 checked
-                                  varUpdate gameBoard (reinitializeBoard humanFirst)
-                                  varUpdate currentColor (reinitializeColor humanFirst)
+                                  varSet gameBoard (reinitializeBoard humanFirst)
+                                  varSet currentColor (reinitializeColor humanFirst)
                                   repaint boardPanel]
 
 setLevel:: Var Level -> Level -> IO() 
 setLevel varLevel level 
-    = do varUpdate varLevel (\i -> level)
+    = do varSet varLevel level
          return ()
 
 infoAbout :: Frame a -> IO()
@@ -156,8 +156,8 @@ checkWin frame varBoard varPiece
     = do board <- varGet varBoard
          piece <- varGet varPiece
          if (isGameEnd board piece) then
-            do varUpdate varPiece (reinitializeColor True)
-               varUpdate varBoard (reinitializeBoard True)
+            do varSet varPiece (reinitializeColor True)
+               varSet varBoard (reinitializeBoard True)
                infoWin frame (whoWins board piece)
             else 
                return ()

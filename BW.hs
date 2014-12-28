@@ -32,13 +32,13 @@ newBoard width = (replicate pad Empty) ++ [White, Black] ++ (replicate (width - 
 newBoard_w :: Int -> Board
 newBoard_w width = (replicate (pad-1) Empty) ++ [Black, White, Black] ++ (replicate (width - 2) Empty) ++ [Black, White] ++ (replicate pad Empty) where pad = (width+1)*((width `div` 2) - 1)
 
-reinitializeBoard :: Bool -> Board -> Board
-reinitializeBoard bool b 
+reinitializeBoard :: Bool  -> Board
+reinitializeBoard bool  
     | bool = newBoard boardWidth
     | otherwise = newBoard_w boardWidth
 
-reinitializeColor::Bool -> Piece->Piece
-reinitializeColor bool color 
+reinitializeColor::Bool -> Piece
+reinitializeColor bool  
     | bool = Black
     | otherwise = White
 
