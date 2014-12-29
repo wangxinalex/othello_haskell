@@ -5,7 +5,7 @@ import Data.Maybe
 import BW
 
 levels :: [(String, Level)]
-levels = [("Easy",Easy),("Medium", Medium), ("Hard", Hard), ("Hell", Hell)]
+levels = [("Easy", Easy), ("Medium", Medium), ("Hard", Hard), ("Hell", Hell)]
 
 boardIndex = 0
 blackIndex = 1
@@ -210,5 +210,5 @@ generatePiece :: Int -> Point
 generatePiece index  
     | index < 0 || index >= boardWidth*boardWidth = error "Invalid position"
     | otherwise = pt x y 
-                  where x = (index `mod` boardWidth)*width+padding
-                        y = (index `div` boardWidth)*width+padding
+                  where x = (index `mod` boardWidth) * width + padding
+                        y = (index `div` boardWidth) * width + padding

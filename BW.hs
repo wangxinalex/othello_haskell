@@ -27,12 +27,12 @@ position2Index (x, y) = (y * boardWidth + x)
 
 {-generate the initial board-}
 newBoard :: Int -> Board
-newBoard width = (replicate pad Empty) ++ [White, Black] ++ (replicate (width - 2) Empty) ++ [Black, White] ++ (replicate pad Empty) where pad = (width+1)*((width `div` 2) - 1)
+newBoard width = (replicate pad Empty) ++ [White, Black] ++ (replicate (width - 2) Empty) ++ [Black, White] ++ (replicate pad Empty) where pad = (width + 1) * ((width `div` 2) - 1)
 
 newBoard_w :: Int -> Board
-newBoard_w width = (replicate (pad-1) Empty) ++ [Black, White, Black] ++ (replicate (width - 2) Empty) ++ [Black, White] ++ (replicate pad Empty) where pad = (width+1)*((width `div` 2) - 1)
+newBoard_w width = (replicate (pad - 1) Empty) ++ [Black, White, Black] ++ (replicate (width - 2) Empty) ++ [Black, White] ++ (replicate pad Empty) where pad = (width + 1) * ((width `div` 2) - 1)
 
-reinitializeBoard :: Bool  -> Board
+reinitializeBoard :: Bool -> Board
 reinitializeBoard bool  
     | bool = newBoard boardWidth
     | otherwise = newBoard_w boardWidth
@@ -59,7 +59,7 @@ whoWins  board piece
 countPieces :: Board -> Piece -> Int
 countPieces board color = length [piece | piece <- board, piece == color]
 
-getOppositeColor::Piece->Piece
+getOppositeColor::Piece -> Piece
 getOppositeColor piece
     | piece == Black = White
     | piece == White = Black
@@ -76,7 +76,7 @@ stepInEmptyGrid board step = board !! (position2Index (getPosition step)) == Emp
 {-check whether this step can reverse other pieces-}
 stepCanReverse :: Board -> Step -> Bool
 stepCanReverse board step 
-    = foldr (||) False (map (besiegeOpposite board step) [p | p <- findPiecesSameColor board (getPiece step)])
+    = foldr (||) False (map (besiegeOpposite board step) (findPiecesSameColor board (getPiece step)))
 
 {-check whether the step is valid.
  1. within the range of board
@@ -115,7 +115,7 @@ positionInPair board step
     
 {-check whether this step is adjacent to other pieces-}
 stepNext :: Board -> Step -> Bool
-stepNext board step  = foldr (||) False [nextPosition (getPosition step) step2| step2 <- findallPieces board ]
+stepNext board step  = foldr (||) False [nextPosition (getPosition step) step2 | step2 <- findallPieces board ]
 
 {-find all positions occupied by a piece-}
 findallPieces :: Board -> [Position]
@@ -124,9 +124,9 @@ findallPieces board = findallPieces_ board 0
 
 findallPieces_ :: Board -> Int -> [Position]
 findallPieces_ [] i = []
-findallPieces_ (b:bs) i
-    | b == Empty  =  findallPieces_ bs (i+1)
-    | otherwise   =  (index2Position i): findallPieces_ bs (i+1)
+findallPieces_ (b : bs) i
+    | b == Empty  =  findallPieces_ bs (i + 1)
+    | otherwise   =  (index2Position i) : findallPieces_ bs (i + 1)
 
 {-find all positions occupied by a piece of the same color-}
 findPiecesSameColor :: Board -> Piece -> [Position]
@@ -136,7 +136,7 @@ findPiecesSameColor board piece = findPiecesSameColor_ board piece 0
 findPiecesSameColor_ :: Board -> Piece -> Int -> [Position]
 findPiecesSameColor_ [] piece i = []
 findPiecesSameColor_ (b:bs) piece i 
-    | b == piece  = (index2Position i) : findPiecesSameColor_ bs piece (i+1)
+    | b == piece  = (index2Position i) : findPiecesSameColor_ bs piece (i + 1)
     | otherwise   = findPiecesSameColor_ bs piece (i+1)
 
 {-check whether two positions are adjacent to each other-}
@@ -193,7 +193,7 @@ getPieceOnBoard board p = board !! (position2Index p)
 
 {-find the number of positions between two positions-}
 distancePosition :: Position -> Position -> Int
-distancePosition (x1,y1) (x2,y2) 
+distancePosition (x1, y1) (x2, y2) 
     | x1 - x2 == 0 = abs (y1 - y2)
     | otherwise    = abs (x1 - x2)
 
@@ -205,8 +205,8 @@ generateRandom max
          return x
 
 -- find all possible steps
-findAvailableSteps:: Piece -> Board -> [Step]
-findAvailableSteps piece board = filter (validStep board) [((x, y), piece) | x <- [0.. (boardWidth - 1)], y <- [0.. (boardWidth - 1)]]
+findAvailableSteps :: Piece -> Board -> [Step]
+findAvailableSteps piece board = filter (validStep board) [((x, y), piece) | x <- [0 .. (boardWidth - 1)], y <- [0 .. (boardWidth - 1)]]
 
 -- easy AI: randomly find an available step
 easyAI:: Piece -> Board -> Step
@@ -235,8 +235,8 @@ quick_sort:: [(Step, Int)] -> [(Step, Int)]
 quick_sort [] = []
 quick_sort ((x, i):[]) = [(x, i)]
 quick_sort ((x, i): xs) =
-	let smaller_or_equal_list = [(a, b)| (a, b)<-xs, b<=i]
-	    larger_list = [(a, b)| (a, b)<-xs, b>i]
+	let smaller_or_equal_list = [(a, b)| (a, b) <- xs, b <= i]
+	    larger_list = [(a, b) | (a, b) <- xs, b > i]
 	in quick_sort smaller_or_equal_list ++ [(x, i)] ++ quick_sort larger_list
 
 -- get the step that could reverse most chesses using dynamic programming
@@ -265,7 +265,7 @@ hardStep level n piece board weight step
 -- every position's weight
 pos2Point:: Position -> Int
 pos2Point (x, y)
-	| (x == 0 || x == (boardWidth-1)) && (y == 0 || y == (boardWidth-1)) = 10
+	| (x == 0 || x == (boardWidth-1)) && (y == 0 || y == (boardWidth - 1)) = 10
 	| (x == 0 || x == (boardWidth-1)) = 5
 	| (y == 0 || y == (boardWidth-1)) = 5
 	| otherwise = 1
